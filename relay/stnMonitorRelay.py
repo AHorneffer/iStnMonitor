@@ -34,6 +34,14 @@ lofar_sbh = struct.pack(SHAME_BLOCK_HEAD, name, size, version, timestamp, flag)
 #  struct MyData myData;
 #} block;
 
+#LCU_IP="192.168.154.1"		#se607c
+#IPout="129.16.208.120"	#heid eth0
+IPin="192.168.154.201"	#heid eth1
+IPto="129.16.208.180"	#Simon
+#IPto="129.16.208.105"	#blid
+UDP_PORT=6070
+
+
 #Inbound
 sockin = socket.socket( socket.AF_INET, # Internet
                       socket.SOCK_DGRAM ) # UDP
@@ -83,3 +91,4 @@ while True:
         stnstatdict = stnstat2dict(message)
         stnstatshm = stnstat2shamecast(stnstatdict)
         sockmout.sendto(stnstatshm, MULTICAST_GROUP)
+
