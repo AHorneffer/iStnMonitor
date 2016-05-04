@@ -6,7 +6,7 @@
 ## 
 #Please edit following two lines according to your LCU network setup.
 #(Note: Gateway PC is a computer that connects to LCU from the observatory network)
-GW_PC_UDP_IP="123.456.789.012" #IP address to LCU gateway PC from LCU
+GW_PC_UDP_IP="192.168.154.201" #IP address to LCU gateway PC from LCU (for SE607 this is heid eth1)
 GW_PC_UDP_PORT=6070            #Port nr on LCU gateway PC
 
 #Paths to various lofar commands:
@@ -21,7 +21,8 @@ import time
 from subprocess import Popen, PIPE
 import datetime
 
-VERSION = '1.2' # version of this script    
+VERSION = '2.0' # version of this script
+CHECK_BC_USER = True
 
 status={}
 
@@ -73,6 +74,22 @@ def aggregateInfo():
            stdout=PIPE).communicate()[0]
       swlstatOutLns= swlstatOut.splitlines()
       status['softwareLevel']=int(swlstatOutLns[0].split()[0])
+    if CHECK_BC_USER:
+      #beamctl user:
+      bc_user = who_beamctl()
+      status['beamctl']=bc_user
+
+
+def who_beamctl():
+    ps_out=Popen(
+           ['/bin/ps', '-Cbeamctl', '--no-headers', '-ouser'],
+           stdout=PIPE).communicate()[0]
+    ps_out_lns = ps_out.splitlines()
+    if len(ps_out_lns) == 0:
+        bc_user = 'None'
+    else:
+        bc_user = ps_out_lns[0]
+    return bc_user
 
 def printInfo():
     print status['station']
@@ -84,6 +101,8 @@ def printInfo():
     print status['48V']
     print status['LCU']
     print status['lightning']
+    if CHECK_BC_USER:
+      print status['beamctl']
  
 def sendstatus(isUDP=True,isSendTest=False,isLogged=True):
         date = time.localtime(status['time'])
@@ -107,6 +126,10 @@ def sendstatus(isUDP=True,isSendTest=False,isLogged=True):
         #The switch status:
         outstring += "\n"
         outstring += "Software Level: %s" % status['softwareLevel']
+        if CHECK_BC_USER:
+          #Who is using beamctl:
+          outstring += "\n"
+          outstring += "beamctl User: %s" % status['beamctl']
 
         if isSendTest:
            outstring="TEST "+outstring
@@ -134,3 +157,4 @@ if __name__ == "__main__":
    aggregateInfo()
    #printInfo()
    sendstatus(isUDP= not( options.prntout))
+   bc_user=who_beamctl()
