@@ -6,20 +6,10 @@
 #
 #Tobia Carozzi 2012-10-30
 #
-#Edit following lines for your particular network configuration.
-RELAYSTNSTAT = False
-SHAMECAST = False
-IPin="192.168.154.201"	#heid eth1
-IPin=""
-IPto="129.16.208.180"	#Simon
-UDP_PORT=6070 #For istnEvn service
-MULTICAST_ADDRESS = 0xe0010104
-MULTICAST_PORT = 4242
-MULTICAST_GROUP = ('224.1.1.04', MULTICAST_PORT)
-isLogging=True
-logfilename='/home/tobia/lofar/logs/StnStatusLatest.log'
-#End configurable variables
+#Import configuration parameters
+from relay_config import *
 
+MULTICAST_GROUP = ('224.1.1.04', MULTICAST_PORT)
 
 import socket
 import struct
