@@ -4,10 +4,9 @@
 ## Inspired by (and partially borrowed from) A. Horneffers "isEcStatus.py" code.
 ## T. Carozzi 30 Sep 2013 (25 Jan 2012) (TobiaC)
 ## 
-#Please edit following two lines according to your LCU network setup.
-#(Note: Gateway PC is a computer that connects to LCU from the observatory network)
-GW_PC_UDP_IP="192.168.154.201" #IP address to LCU gateway PC from LCU (for SE607 this is heid eth1)
-GW_PC_UDP_PORT=6070            #Port nr on LCU gateway PC
+from stnStatMon_config import *
+
+GW_PC_UDP_PORT=6070 #Port for istn service (If you edit this you will need to update port on clients)
 
 #Paths to various lofar commands:
 STATIONTESTPATH="/opt/lofar/sbin/" #Before MAC v1.16 this was '/opt/stationtest/test/envcontroltest/'
@@ -22,7 +21,7 @@ from subprocess import Popen, PIPE
 import datetime
 
 VERSION = '2.0' # version of this script
-CHECK_BC_USER = True
+
 
 status={}
 
