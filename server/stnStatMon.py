@@ -22,7 +22,6 @@ import datetime
 
 VERSION = '2.0' # version of this script
 
-
 status={}
 
 def aggregateInfo():
