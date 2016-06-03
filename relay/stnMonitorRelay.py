@@ -32,7 +32,7 @@ sockin = socket.socket( socket.AF_INET, # Internet
                       socket.SOCK_DGRAM ) # UDP
 sockin.bind( (IPin,UDP_PORT) )
 sockin.setblocking(0)
-timeout_in_seconds = 1
+output_rate = 1 #output status once every output_rate seconds
 
 #outbound
 sockout = socket.socket( socket.AF_INET, # Internet
@@ -106,7 +106,6 @@ def stnstat2shamecast(status):
     except:
       cab3temp=-1.0
       cab3hum=-1.0
-    
     SHAME_BLOCK_HEAD = '16siiii'
     name = 'LOFAR_SE607'     #=11 char name[16];
     size = 40                #  int size;
@@ -114,7 +113,8 @@ def stnstat2shamecast(status):
     timestamp = secSince1970 #  int timestamp;
     flag = 0                 #  int flag;
     SHAME_BLOCK_DATA = 'ff'
-    lofar_scb = struct.pack('!'+SHAME_BLOCK_HEAD+SHAME_BLOCK_DATA,
+    endian = '<' #little
+    lofar_scb = struct.pack(endian+SHAME_BLOCK_HEAD+SHAME_BLOCK_DATA,
                             name, size, version, timestamp, flag,
                             cab3temp, cab3hum)
     return lofar_scb
@@ -122,18 +122,18 @@ def stnstat2shamecast(status):
 message=''
 
 while True:
-    ready = select.select([sockin], [], [], timeout_in_seconds)
+    ready = select.select([sockin], [], [], output_rate)
     if ready[0]:
         message, addr = sockin.recvfrom( 1*1024 ) # buffer size is 1024 bytes
-    
     if isLogging:
-        f=open(logfilename, 'w')
-        f.write("Latest message:\n")
-        f.write(message)
-        f.close()
-        stnstatdict = stnstat2dict(message)
-        print stnstatdict
-        
+        if logfilename=='':
+            stnstatdict = stnstat2dict(message)
+            print stnstatdict
+        else:
+            f=open(logfilename, 'w')
+            f.write("Latest message:\n")
+            f.write(message)
+            f.close()
     if message[0:4] == "TEST":
         print "Testing:"
         print message
