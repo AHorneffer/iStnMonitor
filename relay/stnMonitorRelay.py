@@ -109,7 +109,7 @@ def stnstat2shamecast(status):
     SHAME_BLOCK_HEAD = '16siiii'
     name = 'LOFAR_SE607'     #=11 char name[16];
     size = 40                #  int size;
-    version = 0              #  int version;
+    version = 1              #  int version;
     timestamp = secSince1970 #  int timestamp;
     flag = 0                 #  int flag;
     SHAME_BLOCK_DATA = 'ff'
