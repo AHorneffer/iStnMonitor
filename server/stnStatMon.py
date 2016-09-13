@@ -9,7 +9,6 @@ from stnStatMon_config import *
 GW_PC_UDP_PORT=6070 #Port for istn service (If you edit this you will need to update port on clients)
 
 #Paths to various lofar commands:
-STATIONTESTPATH="/opt/lofar/sbin/" #Before MAC v1.16 this was '/opt/stationtest/test/envcontroltest/'
 OPERATIONSPATH="/opt/operations/bin/"
 LOFARBINPATH="/opt/lofar/bin/"
 
@@ -20,14 +19,38 @@ import time
 from subprocess import Popen, PIPE
 import datetime
 
-VERSION = '2.0' # version of this script
+VERSION = '2.1' # version of this script
 
 status={}
 
-def aggregateInfo():
+
+def pathtoISSTATUS():
+    """Determine path to ISSTATUS script."""
+    lcuSWver = get_lofar_sw_ver()
+    change1 = (1, 16, 0)
+    change2 = (2, 17, 6)
+    changelatest = change2
+    if   lcuSWver >= changelatest:
+        STATIONTESTPATH='/opt/lofar/sbin/'
+        ISSTATUSPY='status.py'
+    elif lcuSWver >= change1 and lcuSWver < change2:
+        STATIONTESTPATH='/opt/lofar/sbin/'
+        ISSTATUSPY='isStatus.py'
+    elif lcuSWver <  change1:
+        STATIONTESTPATH='/opt/stationtest/test/envcontroltest/'
+        ISSTATUSPY='isStatus.py'
+    else:
+        print "Cannot determine version of path"
+        exit(1)
+        
+    return STATIONTESTPATH+ISSTATUSPY
+
+
+def get_isStatus():
+    ISSTATUSscript = pathtoISSTATUS()
     #Environmental control status:
     ECstatOut=Popen(
-           STATIONTESTPATH+'isStatus.py',
+           ISSTATUSscript,
            stdout=PIPE).communicate()[0]
     ECstatOutLns= ECstatOut.splitlines()
     status['station']=ECstatOutLns[1].split()[0]
@@ -57,7 +80,23 @@ def aggregateInfo():
         elif description == 'lightning state':
            key='lightning'
         status[key]=value
-        
+
+
+def get_lofar_sw_ver():
+    ps_out=Popen(
+           [LOFARBINPATH+'swlevel','-V'],
+           stdout=PIPE).communicate()[0]
+    verstr=ps_out.split('-')[-1]
+    ver_maj, ver_min, ver_pat = [int(ver.strip()) for ver in verstr.split('_')]
+    return ver_maj, ver_min, ver_pat
+
+
+def aggregateInfo():
+    """Aggregate information from various sources into a useful iStnMon status.
+       The result is in the 'status' global variable."""
+    #Get the isStatus status.
+    get_isStatus()
+    
     if True:
       #Station switch status:
       StnSwtchstatOut=Popen(
@@ -89,6 +128,7 @@ def who_beamctl():
         bc_user = ps_out_lns[0]
     return bc_user
 
+
 def printInfo():
     print status['station']
     print status['version']
@@ -101,7 +141,8 @@ def printInfo():
     print status['lightning']
     if CHECK_BC_USER:
       print status['beamctl']
- 
+
+
 def sendstatus(isUDP=True,isSendTest=False,isLogged=True):
         date = time.localtime(status['time'])
         outstring = "LOFAR_STN_STATUS (version): %s" % VERSION
@@ -143,6 +184,7 @@ def sendstatus(isUDP=True,isSendTest=False,isLogged=True):
               print outstring 
         else:
            print outstring
+
 
 from optparse import OptionParser
 if __name__ == "__main__":
