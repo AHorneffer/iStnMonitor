@@ -57,13 +57,18 @@ def stnstat2dict(message):
         #Process status lines
         status_lns = message.splitlines()
         #Get iStnStatus version
-        (version_heading, version) = status_lns[0].split(': ')
-        if version == '1.2':
-            (environ_ln, switch_ln, swlevel_ln
-            ) = status_lns[1:4]
-        if version == '2.0':
+        (version_heading, versionstr) = status_lns[0].split(': ')
+        version = versionstr.split('.')
+        if version >= ['2', '0']:
            (environ_ln, switch_ln, swlevel_ln, bmctluser_ln
             ) = status_lns[1:5]
+        elif version >= ['1', '0']:
+            (environ_ln, switch_ln, swlevel_ln
+            ) = status_lns[1:4]
+            bmctluser_ln = ''
+        else:
+            print "Error: unknown version: ", version
+            exit(1)
         #Process environment state line
         (timestamp, station_keyval, ECvers_keyval, cab3temp_keyval, cab3hum_keyval
         , heater_keyval, fourty8V_keyval, LCU_keyval, lightning_keyval
@@ -73,7 +78,7 @@ def stnstat2dict(message):
         status = {}
         keyvalsep = ': '
         #LOFAR iStnStatus version
-        status['version'] = version
+        status['version'] = versionstr
         #Environment
         status['time'] =     timestamp
         (station_key,  status['station']) =  station_keyval.split(keyvalsep)
