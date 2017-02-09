@@ -12,8 +12,8 @@ from stnStatMon_config import *
 GW_PC_UDP_PORT=6070 #Port for istn service (If you edit this you will need to update port on clients)
 
 #Paths to various lofar commands (please include the trailing "/"):
-#OPERATIONSPATH="/opt/operations/bin/"
-OPERATIONSPATH="/usr/local/bin/"
+OPERATIONSPATH="/opt/operations/bin/"
+#OPERATIONSPATH="/usr/local/bin/"
 LOFARBINPATH="/opt/lofar/bin/"
 
 import sys
@@ -106,7 +106,7 @@ def aggregateInfo():
     if True:
       #Station switch status:
       StnSwtchstatOut=Popen(
-           ['sudo', OPERATIONSPATH+'stationswitch', '-s'],
+           [OPERATIONSPATH+'getstationmode'],
            stdout=PIPE).communicate()[0]
       StnSwtchstatOutLns= StnSwtchstatOut.splitlines()
       status['switch']=StnSwtchstatOutLns[0].split()[-1]
