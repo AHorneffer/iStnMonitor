@@ -3,12 +3,15 @@
 ## Script for aggregating station status information which is broadcast on UDP.
 ## Inspired by (and partially borrowed from) A. Horneffers "isEcStatus.py" code.
 ## T. Carozzi 30 Sep 2013 (25 Jan 2012) (TobiaC)
+## Modified by A. Horneffer 2013--2017
 ## 
+
+#Please edit stnStatMon_config according to your taste and LCU network setup
 from stnStatMon_config import *
 
 GW_PC_UDP_PORT=6070 #Port for istn service (If you edit this you will need to update port on clients)
 
-#Paths to various lofar commands:
+#Paths to various lofar commands (please include the trailing "/"):
 #OPERATIONSPATH="/opt/operations/bin/"
 OPERATIONSPATH="/usr/local/bin/"
 LOFARBINPATH="/opt/lofar/bin/"
@@ -19,8 +22,10 @@ import struct
 import time
 from subprocess import Popen, PIPE
 import datetime
+from parse_rspctl import parse_rspctl_status, parse_rspctl_rcu
+from parse_tbbctl import parse_tbbctl_status
 
-VERSION = '2.2' # version of this script
+VERSION = '2.3' # version of this script
 
 status={}
 
@@ -116,6 +121,27 @@ def aggregateInfo():
       #beamctl user:
       bc_user = who_beamctl()
       status['beamctl']=bc_user
+    if CHECK_NUM_LOGINS:
+      #number of logged-in users
+      woutput = Popen('w | wc', shell=True,
+                      stdout=PIPE).communicate()[0].split()[0]
+      status['allUsers'] = int(woutput)-2
+      woutputuser = Popen('w | grep user[0-9] | wc', shell=True,
+                          stdout=PIPE).communicate()[0].split()[0]
+      status['localUsers'] = int(woutputuser)
+    if CHECK_RSP_STATS and (status['softwareLevel'] >= 2):
+      #status of the RSP boards
+      statoutput = Popen(LOFARBINPATH+'rspctl --status', shell=True,
+                         stdout=PIPE,stderr=PIPE).communicate()[0]
+      status['rspstat'] = parse_rspctl_status(statoutput)
+      rcuoutput = Popen(LOFARBINPATH+'rspctl --rcu', shell=True,
+                        stdout=PIPE,stderr=PIPE).communicate()[0]
+      status['rcumodes'] = parse_rspctl_rcu(rcuoutput)
+    if CHECK_TBB_STATS and (status['softwareLevel'] >= 2):
+      #status of the TBBs
+      tbbstatoutput = Popen('/opt/lofar/bin/tbbctl --status', shell=True,
+                         stdout=PIPE,stderr=PIPE).communicate()[0]
+      status['tbbstat'] = parse_tbbctl_status(tbbstatoutput)
 
 
 def who_beamctl():
@@ -142,7 +168,12 @@ def printInfo():
     print status['lightning']
     if CHECK_BC_USER:
       print status['beamctl']
-
+    if status.has_key('rcumodes'):
+      print "Text output of rcumodes not implemented yet"
+    if status.has_key('rspstat'):
+      print "Text output of RSP status not implemented yet"
+    if status.has_key('tbbstat'):  
+      print "Text output of TBB status not implemented yet"
 
 def sendstatus(isUDP=True,isSendTest=False,isLogged=True):
         date = time.localtime(status['time'])
@@ -170,6 +201,75 @@ def sendstatus(isUDP=True,isSendTest=False,isLogged=True):
           #Who is using beamctl:
           outstring += "\n"
           outstring += "beamctl User: %s" % status['beamctl']
+        if CHECK_NUM_LOGINS:
+          #Logged in users:
+          outstring += "\n"
+          outstring += "All Users: %s " % status['allUsers']
+          outstring += "Local Users: %s " % status['localUsers']
+        if status.has_key('rcumodes'):
+          #rcumodes
+          outstring += "\n"
+          outstring += "RCUmodes -1:%d 0:%d 1:%d 2:%d 3:%d 4:%d 5:%d 6:%d 7:%d"\
+              % (status['rcumodes']['-1'], status['rcumodes']['0'], \
+                     status['rcumodes']['1'], status['rcumodes']['2'], \
+                     status['rcumodes']['3'], status['rcumodes']['4'], \
+                     status['rcumodes']['5'], status['rcumodes']['6'], \
+                     status['rcumodes']['7'],)
+        if status.has_key('rspstat'):
+          outstring += "\n"
+          outstring +="RSPtemps PCBmean: %.2fC, BPmean: %.2fC, APmean: %.2fC\n" \
+              % (status['rspstat']['PCBtempmean'], \
+                     status['rspstat']['BPtempmean'], \
+                     status['rspstat']['APtempmean'])
+          outstring += "RSPtemps PCBmax: %.2fC, BPmax: %.2fC, APmax: %.2fC\n" \
+              % (status['rspstat']['PCBtempmax'], \
+                     status['rspstat']['BPtempmax'], \
+                     status['rspstat']['APtempmax'])
+          outstring += "RSPtemps PCBmin: %.2fC, BPmin: %.2fC, APmin: %.2fC\n" \
+              % (status['rspstat']['PCBtempmin'], \
+                     status['rspstat']['BPtempmin'], \
+                     status['rspstat']['APtempmin'])
+          outstring += "RSPvolt V1.2: %.2f, V2.5: %.2f, V3.3: %.2f\n" \
+              % (status['rspstat']['volt12mean'], \
+                     status['rspstat']['volt25mean'], \
+                     status['rspstat']['volt33mean'])
+          outstring += "RSPvoltMax V1.2: %.2f, V2.5: %.2f, V3.3: %.2f\n" \
+              % (status['rspstat']['volt12max'], \
+                     status['rspstat']['volt25max'], \
+                     status['rspstat']['volt33max'])
+          outstring += "RSPvoltMin V1.2: %.2f, V2.5: %.2f, V3.3: %.2f" \
+              % (status['rspstat']['volt12min'], \
+                     status['rspstat']['volt25min'], \
+                     status['rspstat']['volt33min'])
+        if status.has_key('tbbstat'):
+            outstring += "\n"
+            outstring +="Bad-TBBs: %d, Good-TBBs: %d\n" \
+                % (status['tbbstat']['badTBBs'], \
+                       status['tbbstat']['goodlines'])
+            outstring +="TBBtemps PCBmean: %.2fC, TPmean: %.2fC, MPmean: %.2fC\n" \
+                % (status['tbbstat']['PCBtempmean'], \
+                       status['tbbstat']['TPtempmean'], \
+                       status['tbbstat']['MPtempmean'])
+            outstring += "TBBtemps PCBmax: %.2fC, TPmax: %.2fC, MPmax: %.2fC\n" \
+                % (status['tbbstat']['PCBtempmax'], \
+                       status['tbbstat']['TPtempmax'], \
+                       status['tbbstat']['MPtempmax'])
+            outstring += "TBBtemps PCBmin: %.2fC, TPmin: %.2fC, MPmin: %.2fC\n" \
+                % (status['tbbstat']['PCBtempmin'], \
+                       status['tbbstat']['TPtempmin'], \
+                       status['tbbstat']['MPtempmin'])
+            outstring += "TBBvolt V1.2: %.2f, V2.5: %.2f, V3.3: %.2f\n" \
+                % (status['tbbstat']['volt12mean'], \
+                       status['tbbstat']['volt25mean'], \
+                       status['tbbstat']['volt33mean'])
+            outstring += "TBBvoltMax V1.2: %.2f, V2.5: %.2f, V3.3: %.2f\n" \
+                % (status['tbbstat']['volt12max'], \
+                       status['tbbstat']['volt25max'], \
+                       status['tbbstat']['volt33max'])
+            outstring += "TBBvoltMin V1.2: %.2f, V2.5: %.2f, V3.3: %.2f" \
+                % (status['tbbstat']['volt12min'], \
+                       status['tbbstat']['volt25min'], \
+                       status['tbbstat']['volt33min'])
 
         if isSendTest:
            outstring="TEST "+outstring
@@ -198,4 +298,3 @@ if __name__ == "__main__":
    aggregateInfo()
    #printInfo()
    sendstatus(isUDP= not( options.prntout))
-   bc_user=who_beamctl()

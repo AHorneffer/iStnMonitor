@@ -35,19 +35,20 @@ sockin.setblocking(0)
 output_rate = 1 #output status once every output_rate seconds
 
 #outbound
-sockout = socket.socket( socket.AF_INET, # Internet
-                      socket.SOCK_DGRAM ) # UDP
-
+if RELAYSTNSTAT:
+    sockout = socket.socket( socket.AF_INET, # Internet
+                             socket.SOCK_DGRAM ) # UDP
 #multicast-out
-sockmout = socket.socket( socket.AF_INET, # Internet
-                      socket.SOCK_DGRAM, socket.IPPROTO_UDP) # UDP
-# Set the time-to-live for messages to 1 so they do not go past the
-# local network segment.
-ttl = struct.pack('b', 1)
-sockmout.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
+if SHAMECAST:
+    sockmout = socket.socket( socket.AF_INET, # Internet
+                              socket.SOCK_DGRAM, socket.IPPROTO_UDP) # UDP
+    # Set the time-to-live for messages to 1 so they do not go past the
+    # local network segment.
+    ttl = struct.pack('b', 1)
+    sockmout.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
 
-#mreq = struct.pack("4sl", socket.inet_aton(MULTICAST_ADDRESS), socket.INADDR_ANY)
-#sockmout.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+    #mreq = struct.pack("4sl", socket.inet_aton(MULTICAST_ADDRESS), socket.INADDR_ANY)
+    #sockmout.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 
 
 def stnstat2dict(message):
