@@ -37,7 +37,7 @@ Now all the graphs for the station should be available on the list view of the g
 
 All the graphs should be visible on the list view.
 1. Got to `Management` -> `Graph Trees`
-1. Select the existing "Default" tree od `Add` a new tree
+1. Select the existing "Default" tree or `Add` a new tree
 1. Give the tree a useful name / change the name of the "Default" tree
 1. Set up the new tree. I do:
     1. Add a graph `LCU environment` (I usually don't change the `Round Robin Archive` value. I don't know what it does here.)
