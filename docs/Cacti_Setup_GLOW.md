@@ -3,7 +3,7 @@
 ## Import Template(s)
 
 Import the template for a GLOW station `iStnMonitor/client/LOFAR_cacti_template_GLOW.xml`. 
-Make sure to tick the box next to `Use custom RRA settings from the template`, or you Cacti not 
+Make sure to tick the box next to `Use custom RRA settings from the template`, or Cacti will not 
 use the high-resolution data but will do increasingly more averaging for old data.
 
 In case you also want to display the data from the barix device in Effelsberg, also import 
